@@ -14,8 +14,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	_, err = l.Accept()
-	
+	connection, err := l.Accept()
+
+	defer connection.Close()
+
+	_, err = connection.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+
 	if err != nil {
 		fmt.Println("Error accepting connection: ", err.Error())
 		os.Exit(1)
