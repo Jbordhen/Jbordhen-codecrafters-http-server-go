@@ -17,7 +17,7 @@ func main() {
 
 	connection, err := l.Accept()
 
-	go handleHTTPResponse(connection)
+	handleHTTPResponse(connection)
 
 	defer connection.Close()
 
@@ -40,17 +40,15 @@ func handleHTTPResponse(connection net.Conn) {
 
 	path := strings.Split(lines[0], " ")[1]
 
-	if path == "/" {
-		_, err = connection.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+	var response []byte
 
-		if err != nil {
-			fmt.Println("Error accepting connection: ", err.Error())
-			os.Exit(1)
-		}
-		return
+	if path == "/" {
+		response = []byte("HTTP/1.1 200 OK\r\n\r\n")
+	} else {
+		response = []byte("HTTP/1.1 404 Not Found\r\n\r\n")
 	}
 
-	_, err = connection.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
+	_, err = connection.Write(response)
 
 	if err != nil {
 		fmt.Println("Error accepting connection: ", err.Error())
