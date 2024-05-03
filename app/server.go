@@ -40,17 +40,31 @@ func handleHTTPResponse(connection net.Conn) {
 
 	path := strings.Split(lines[0], " ")[1]
 
-	var response []byte
-
-	if path == "/" {
-		response = []byte("HTTP/1.1 200 OK\r\n\r\n")
-	} else {
-		response = []byte("HTTP/1.1 404 Not Found\r\n\r\n")
-	}
+	var response []byte = generateResponse(path)
 
 	_, err = connection.Write(response)
 
 	if err != nil {
 		fmt.Println("Error accepting connection: ", err.Error())
 	}
+}
+
+func generateResponse(path string) []byte {
+	var response []byte
+
+	if path == "/" {
+		response = []byte("HTTP/1.1 200 OK\r\n\r\n")
+		return response
+	}
+
+	if strings.Contains(path, "/echo") {
+		content := strings.Split(path, "/echo/")[1]
+
+		response = []byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(content), content))
+		return response
+	}
+
+	response = []byte("HTTP/1.1 404 Not Found\r\n\r\n")
+
+	return response
 }
