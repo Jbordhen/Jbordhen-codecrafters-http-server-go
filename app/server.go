@@ -77,6 +77,27 @@ func generateResponse(buffer []byte) []byte {
 		return response
 	}
 
+	if strings.HasPrefix(path, "/files/") {
+		content, found := strings.CutPrefix(path, "/files/")
+
+		if !found || len(os.Args) < 3 {
+			response = []byte("HTTP/1.1 404 Not Found\r\n\r\n")
+			return response
+		}
+
+		directory := os.Args[2]
+
+		file, err := os.ReadFile(fmt.Sprintf("%s/%s", directory, content))
+
+		if err != nil {
+			response = []byte("HTTP/1.1 404 Not Found\r\n\r\n")
+			return response
+		}
+
+		response = []byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n%s", len(file), file))
+		return response
+	}
+
 	response = []byte("HTTP/1.1 404 Not Found\r\n\r\n")
 
 	return response
