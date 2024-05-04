@@ -15,15 +15,20 @@ func main() {
 		os.Exit(1)
 	}
 
-	connection, err := l.Accept()
+	for {
+		connection, err := l.Accept()
 
-	handleHTTPResponse(connection)
+		if err != nil {
+			fmt.Println("Error accepting connection: ", err.Error())
+			continue
+		}
 
-	defer connection.Close()
-
+		go handleHTTPResponse(connection)
+	}
 }
 
 func handleHTTPResponse(connection net.Conn) {
+	defer connection.Close()
 	buffer := make([]byte, 255)
 
 	_, err := connection.Read(buffer)
@@ -36,12 +41,12 @@ func handleHTTPResponse(connection net.Conn) {
 
 	var response []byte = generateResponse(buffer)
 
-	fmt.Println(string(response))
-
 	_, err = connection.Write(response)
 
 	if err != nil {
 		fmt.Println("Error accepting connection: ", err.Error())
+		os.Exit(1)
+		return
 	}
 }
 
