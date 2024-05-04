@@ -34,13 +34,9 @@ func handleHTTPResponse(connection net.Conn) {
 		return
 	}
 
-	input := string(buffer)
+	var response []byte = generateResponse(buffer)
 
-	lines := strings.Split(input, "\r\n")
-
-	path := strings.Split(lines[0], " ")[1]
-
-	var response []byte = generateResponse(path)
+	fmt.Println(string(response))
 
 	_, err = connection.Write(response)
 
@@ -49,7 +45,13 @@ func handleHTTPResponse(connection net.Conn) {
 	}
 }
 
-func generateResponse(path string) []byte {
+func generateResponse(buffer []byte) []byte {
+	input := string(buffer)
+
+	lines := strings.Split(input, "\r\n")
+
+	path := strings.Split(lines[0], " ")[1]
+
 	var response []byte
 
 	if path == "/" {
@@ -61,6 +63,12 @@ func generateResponse(path string) []byte {
 		content := strings.Split(path, "/echo/")[1]
 
 		response = []byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(content), content))
+		return response
+	}
+
+	if path == "/user-agent" {
+		userAgent := strings.Split(lines[2], ": ")[1]
+		response = []byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(userAgent), userAgent))
 		return response
 	}
 
