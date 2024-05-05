@@ -55,7 +55,17 @@ func generateResponse(buffer []byte) []byte {
 
 	lines := strings.Split(input, "\r\n")
 
-	path := strings.Split(lines[0], " ")[1]
+	httpInfo := strings.Split(lines[0], " ")
+
+	httpMethod := httpInfo[0]
+
+	var body string
+
+	if httpMethod == "POST" {
+		body = string(lines[2])
+	}
+
+	path := httpInfo[1]
 
 	var response []byte
 
@@ -78,24 +88,51 @@ func generateResponse(buffer []byte) []byte {
 	}
 
 	if strings.HasPrefix(path, "/files/") {
-		content, found := strings.CutPrefix(path, "/files/")
+		if httpMethod == "GET" {
+			content, found := strings.CutPrefix(path, "/files/")
 
-		if !found || len(os.Args) < 3 {
-			response = []byte("HTTP/1.1 404 Not Found\r\n\r\n")
+			if !found || len(os.Args) < 3 {
+				response = []byte("HTTP/1.1 404 Not Found\r\n\r\n")
+				return response
+			}
+
+			directory := os.Args[2]
+
+			file, err := os.ReadFile(fmt.Sprintf("%s/%s", directory, content))
+
+			if err != nil {
+				response = []byte("HTTP/1.1 404 Not Found\r\n\r\n")
+				return response
+			}
+
+			response = []byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n%s", len(file), file))
 			return response
 		}
 
-		directory := os.Args[2]
+		if httpMethod == "POST" {
+			fileName, found := strings.CutPrefix(path, "/files/")
 
-		file, err := os.ReadFile(fmt.Sprintf("%s/%s", directory, content))
+			if !found || len(os.Args) < 3 {
+				response = []byte("HTTP/1.1 404 Not Found\r\n\r\n")
+				return response
+			}
 
-		if err != nil {
-			response = []byte("HTTP/1.1 404 Not Found\r\n\r\n")
+			if len(lines) > 6 {
+				body = (strings.Trim(lines[6], "\r\n"))
+			}
+
+			directory := os.Args[2]
+			body := strings.Replace(body, "\x00", "", -1)
+
+			err := os.WriteFile(fmt.Sprintf("%s/%s", directory, fileName), []byte(body), 0644)
+
+			if err != nil {
+				response = []byte("HTTP/1.1 500 Error creating file\r\n\r\n")
+			}
+
+			response = []byte(fmt.Sprintf("HTTP/1.1 201 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(body), body))
 			return response
 		}
-
-		response = []byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n%s", len(file), file))
-		return response
 	}
 
 	response = []byte("HTTP/1.1 404 Not Found\r\n\r\n")
